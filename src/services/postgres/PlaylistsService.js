@@ -63,6 +63,40 @@ class PlaylistsService {
     return result.rows[0].id;
   }
 
+  async addPlaylistSongActivities({
+    playlistId, songId, credentialId, action,
+  }) {
+    const id = `activities-${nanoid(16)}`;
+    const time = new Date().toISOString();
+    const query = {
+      text: 'INSERT INTO playlist_song_activities VALUES($1,$2,$3,$4,$5,$6) RETURNING user_id, playlist_id',
+      values: [id, playlistId, songId, credentialId, action, time],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new InvariantError('Acitivies gagal ditambahkan');
+    }
+    return result.rows[0];
+  }
+
+  async getPlaylistSongActivities(playlistId) {
+    const query = {
+      text: `select users.username, songs.title, playlist_song_activities.action, playlist_song_activities.time
+      from playlist_song_activities
+      left join users on users.id = playlist_song_activities.user_id
+      left join songs on songs.id = playlist_song_activities.song_id
+      where playlist_song_activities.playlist_id = $1
+      `,
+      values: [playlistId.id],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Activities tidak ditemukan');
+    }
+
+    return result.rows;
+  }
+
   async deletePlaylistById(id) {
     const query = {
       text: 'DELETE FROM playlists WHERE id = $1 RETURNING id',
@@ -77,7 +111,7 @@ class PlaylistsService {
 
   async deleteSongFromPlaylist(songId, playlistId) {
     const query = {
-      text: 'DELETE FROM playlist_songs WHERE song_id = $1 AND playlist_id = $2 RETURNING id',
+      text: 'DELETE FROM playlist_songs WHERE song_id = $1 AND playlist_id = $2 RETURNING song_id',
       values: [songId, playlistId],
     };
     const result = await this._pool.query(query);
@@ -85,6 +119,7 @@ class PlaylistsService {
     if (!result.rowCount) {
       throw new NotFoundError('Lagu di playlist gagal di hapus. Id tidak ditemukan');
     }
+    return result.rows;
   }
 
   async verifyPlaylistOwner(id, owner) {
