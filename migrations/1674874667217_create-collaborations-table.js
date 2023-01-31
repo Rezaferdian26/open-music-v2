@@ -19,12 +19,6 @@ exports.up = (pgm) => {
     },
   });
 
-  /*
-    Menambahkan constraint UNIQUE, kombinasi dari kolom playlists_id dan user_id.
-    Guna menghindari duplikasi data antara nilai keduanya.
-  */
-  pgm.addConstraint('collaborations', 'unique_playlist_id_and_user_id', 'UNIQUE(playlist_id, user_id)');
-
   // eslint-disable-next-line max-len
   // memberikan constraint foreign key pada kolom playlists_id dan user_id terhadap playlists.id dan users.id
   pgm.addConstraint('collaborations', 'fk_collaborations.playlist_id_playlists.id', 'FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON DELETE CASCADE');

@@ -28,8 +28,9 @@ class PlaylistsService {
   async getPlaylists(owner) {
     const query = {
       text: `SELECT playlists.id, playlists.name, users.username FROM playlists
-      INNER JOIN users ON playlists.owner = users.id
-      WHERE owner = $1`,
+      left join collaborations on collaborations.playlist_id = playlists.id
+      left join users on users.id = playlists.owner
+      where playlists.owner = $1 or collaborations.user_id = $1`,
       values: [owner],
     };
     const result = await this._pool.query(query);
@@ -131,8 +132,8 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new NotFoundError('Playlist tidak ditemukan');
     }
-    const note = result.rows[0];
-    if (note.owner !== owner) {
+    const playlist = result.rows[0];
+    if (playlist.owner !== owner) {
       throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
     }
   }
